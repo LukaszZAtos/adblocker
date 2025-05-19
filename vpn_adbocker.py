@@ -25,7 +25,7 @@ try:
 except ImportError:
     WINDOWS = False
     try:
-        import nfqueue  # dla Linux
+        from netfilterqueue import NetfilterQueue  # dla Linux - poprawna nazwa modułu
         from scapy.all import IP, TCP, UDP, DNS, DNSQR, Raw
         LINUX_NFQUEUE = True
     except ImportError:
@@ -67,7 +67,70 @@ YOUTUBE_AD_PATTERNS = [
     r'videoplayback.*&id=[0-9a-zA-Z_-]+\.[0-9]+\.[0-9]+\.[0-9]+',
     # Wzorce URL w wideo pre-rollowych
     r'redirector.googlevideo.com/videoplayback',
-    r'r[0-9]+---sn-[a-z0-9]+\.googlevideo\.com\/videoplayback\/.*\/ads'
+    r'r[0-9]+---sn-[a-z0-9]+\.googlevideo\.com\/videoplayback\/.*\/ads',
+    
+    # Nowe wzorce
+    r'adservice\.google\.',
+    r'pagead2\.googlesyndication\.com',
+    r'youtube\.com\/api\/stats\/ads',
+    r'youtube\.com\/pagead\/adview',
+    r'youtube\.com\/get_midroll_',
+    r'\.googlevideo\.com\/videogoodput',
+    r'\.youtube\.com\/api\/stats\/qoe\?adformat',
+    r'\.youtube\.com\/pagead\/interaction',
+    r'innovid\.com',
+    r'youtube\.com\/pagead\/conversion',
+    r'youtube\.com\/pagead\/viewthroughconversion',
+    r's\.ytimg\.com\/yts\/swfbin\/player-.*\/watch_as3\.swf',
+    r'youtube\.com\/_get_ads',
+    r'youtube\.com\/ptracking\?',
+    r'youtube\.com\/get_video_info\?.*(&ad_type=|&adformat=)',
+    r'youtube\.com\/api\/stats\/atr',
+    r'ad\.doubleclick\.net',
+    r'\.2mdn\.net',
+    r'youtubei\.googleapis\.com\/youtubei\/v1\/player\/ad',
+    r'\.googlevideo\.com\/ptracking\?',
+    r'\.googlevideo\.com\/sodar\/',
+    r'\.googlevideo\.com\/generate_204',
+    r'manifest\.googlevideo\.com',
+    r'googleads\.g\.doubleclick\.net',
+    r'\.googlevideo\.com.*\/ad_break',
+    r'\.googlevideo\.com.*&ctier=L',
+    r'\.googlevideo\.com.*&oad',
+    r'\.youtube\.com\/pcs\/activeview',
+    r'\.youtube\.com\/pagead\/',
+    r'r[0-9]+---sn-[a-z0-9]+-[a-z0-9]+\.googlevideo\.com',
+    r'\.youtube-nocookie\.com\/api\/stats\/ads',
+    r'\.youtube-nocookie\.com\/pagead\/',
+    r'dynamicadplacement',
+    
+    # Najnowsze wzorce bloków reklamowych z 2025 roku
+    r'r[0-9]+\.sn-[a-z0-9-]+\.googlevideo\.com',
+    r'r[0-9]+---sn-[a-z0-9]{8}\.googlevideo\.com',
+    r'r[0-9]+\.sn-[a-z0-9]+-[a-z0-9]{4}\.googlevideo\.com',
+    r'\.googlevideo\.com\/videogoodput.*\/adunit\/',
+    r'youtube\.com\/youtubei\/v1\/player\/ad_',
+    r'youtube\.com\/api\/stats\/ads_break',
+    r'youtube\.com\/api\/stats\/playback\/post_playback',
+    r'youtube\.com\/ads_data_monitor',
+    r'youtube\.com\/pagead\/adunit\/',
+    r'youtube\.com\/live_stats\?.*adformat',
+    r'youtube\.com\/api\/stats\/delayplay',
+    r'youtube\.com\/pagead\/viewthroughconversion\/',
+    r'googlevideo\.com.*\/ad_break\?',
+    r'googlevideo\.com.*&adbreaktype=',
+    r'googlevideo\.com.*&adtagurl=',
+    r'googlevideo\.com.*&ad_type=',
+    r'googlevideo\.com\/api\/ads\/',
+    r'google-analytics\.com\/collect.*aip=',
+    r'youtube\.com\/watch_fragments_ajax.*adunit',
+    r'youtube\.com\/api\/stats\/qoe\?event=streamingstats.*adformat',
+    r'youtube\.com\/pagead\/interaction\/\?ai=',
+    r'\.googlevideo\.com\/videoplayback\/.*\/ads',
+    r'googlevideo\.com\/videoplayback.*&adpodposition',
+    r'youtube\.com\/get_midroll_info\?ei=',
+    r'\.googlevideo\.com\/ptracking.*adurl',
+    r'\.googlevideo\.com\/videoplayback.*&ads_tag='
 ]
 
 # Skompilowane wyrażenia regularne dla lepszej wydajności
@@ -259,17 +322,17 @@ class YouTubeAdBlocker:
                         logger.info(f"Blokowanie reklamy: {url} od {client_ip}")
                         self.stats.add_packet(is_blocked=True, domain=urllib.parse.urlparse(url).netloc, client_ip=client_ip)
                         # Odrzuć pakiet
-                        payload.set_verdict(nfqueue.NF_DROP)
+                        payload.drop()
                         return
             
             # Przepuść pakiet
             self.stats.add_packet()
-            payload.set_verdict(nfqueue.NF_ACCEPT)
+            payload.accept()
             
         except Exception as e:
             logger.error(f"Błąd podczas przetwarzania pakietu: {e}")
             # W razie błędu przepuść pakiet
-            payload.set_verdict(nfqueue.NF_ACCEPT)
+            payload.accept()
 
     def setup_iptables_rules(self):
         """Konfiguruje reguły iptables do przechwytywania pakietów"""
@@ -388,24 +451,14 @@ class YouTubeAdBlocker:
         self.setup_iptables_rules()
         
         # Utwórz i skonfiguruj kolejkę pakietów
-        queue = nfqueue.queue()
-        queue.open()
-        queue.bind(1)  # Kolejka numer 1
-        queue.set_callback(self.handle_packet_linux)
-        queue.create_queue(1)
+        queue = NetfilterQueue()
+        queue.bind(1, self.handle_packet_linux)  # Kolejka numer 1
         
         logger.info("Blokowanie reklam YouTube aktywne. Naciśnij Ctrl+C, aby zakończyć.")
         
         try:
             # Uruchom pętlę główną
-            while self.running:
-                queue.try_run()
-                
-                # Okresowo wyświetlaj statystyki
-                if self.stats.total_packets > 0 and self.stats.total_packets % 1000 == 0:
-                    self.stats.print_stats()
-                
-                time.sleep(0.01)  # Mała pauza dla zmniejszenia obciążenia CPU
+            queue.run()
                 
         except KeyboardInterrupt:
             logger.info("Otrzymano sygnał przerwania...")
@@ -413,8 +466,7 @@ class YouTubeAdBlocker:
             logger.error(f"Nieoczekiwany błąd: {e}")
         finally:
             logger.info("Zatrzymywanie blokowania...")
-            queue.unbind(1)
-            queue.close()
+            queue.unbind()
             self.cleanup_iptables_rules()
 
     def start(self):
@@ -534,4 +586,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
