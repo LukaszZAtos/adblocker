@@ -6,6 +6,42 @@ Program do blokowania reklam YouTube w ruchu sieciowym poprzez monitorowanie i f
 
 YouTube VPN AdBlocker to narzędzie służące do blokowania reklam YouTube poprzez analizę ruchu sieciowego na interfejsach VPN. Program wykrywa i blokuje pakiety zawierające wzorce URL charakterystyczne dla reklam, co pozwala na efektywne blokowanie reklam bez konieczności instalowania dodatków w przeglądarce.
 
+## Jak to działa
+
+Skrypt `vpn_adblocker.py` działa na poziomie sieci, a nie jako rozszerzenie przeglądarki. Oto szczegółowe wyjaśnienie jego działania:
+
+1. **Przechwytywanie pakietów sieciowych**:
+   - Na Windows używa biblioteki `PyDivert` do przechwytywania pakietów
+   - Na Linuxie wykorzystuje `NetfilterQueue` i `iptables` do przekierowania ruchu HTTP/HTTPS
+
+2. **Detekcja reklam**:
+   - Skrypt przeszukuje przechodzące pakiety HTTP/HTTPS
+   - Wyodrębnia adresy URL z ruchu sieciowego
+   - Porównuje je z rozbudowaną bazą wzorców reklamowych (regex) dla YouTube
+
+3. **Mechanizm blokowania**:
+   - Jeśli adres URL pasuje do wzorca reklamy, pakiet jest odrzucany
+   - Na Linuxie używa `iptables` do odrzucania pakietów
+   - Na Windows blokuje pakiety poprzez `PyDivert`
+
+4. **Automatyczna konfiguracja**:
+   - Wykrywa interfejsy VPN i odpowiednie podsieci
+   - Konfiguruje reguły `iptables` (Linux) automatycznie
+   - Czyszczenie reguł po zakończeniu pracy skryptu
+
+5. **Analiza w czasie rzeczywistym**:
+   - Analizuje nagłówki HTTP i dane TLS
+   - Rozpoznaje wzorce charakterystyczne dla reklam YouTube
+   - Blokuje zarówno reklamy w formie pre-roll, mid-roll jak i bannery
+
+6. **Zbieranie statystyk**:
+   - Zlicza liczbę przeanalizowanych pakietów
+   - Liczy zablokowane pakiety reklamowe
+   - Pokazuje listę najczęściej blokowanych domen reklamowych
+   - Prezentuje raporty dotyczące efektywności blokowania
+
+Kluczową zaletą tego rozwiązania jest to, że działa na poziomie sieci, więc blokuje reklamy dla wszystkich urządzeń korzystających z VPN, bez potrzeby instalacji dodatkowych wtyczek w przeglądarkach. Jest to szczególnie przydatne w środowiskach domowych, gdzie wiele urządzeń (włącznie z telefonami, smart TV) korzysta z jednego łącza VPN.
+
 ### Główne funkcje
 
 - Automatyczne wykrywanie interfejsów i podsieci VPN
@@ -134,11 +170,3 @@ python3 vpn_adblocker.py --log debug
    ```bash
    pip install pydivert
    ```
-
-2. **Problemy z uprawnieniami**
-   - Uruchom wiersz poleceń lub PowerShell jako administrator
-   - Upewnij się, że skrypt ma odpowiednie uprawnienia
-
-## Licencja
-
-Ten projekt jest udostępniany na licencji [MIT](LICENSE).
