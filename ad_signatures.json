@@ -1,0 +1,189 @@
+{
+  "ad_patterns": [
+    {
+      "name": "pre_roll_nonskippable",
+      "type": "pre-roll",
+      "skippable": false,
+      "patterns": [
+        "adpodposition=0.*(nonskip|ad_break_type=2)",
+        "ad_break_type=2.*adpodposition=0",
+        "adpodposition=0.*ad_break_type=2",
+        "preroll.*nonskip",
+        "ctier=L.*bumper"
+      ],
+      "heuristics": {
+        "duration_range": [5, 15]
+      }
+    },
+    {
+      "name": "pre_roll_skippable",
+      "type": "pre-roll",
+      "skippable": true,
+      "patterns": [
+        "adpodposition=0",
+        "ad_break_type=1",
+        "preroll",
+        "ad_type=video_click_to_play"
+      ],
+      "heuristics": {
+        "duration_range": [15, 30]
+      }
+    },
+    {
+      "name": "mid_roll_nonskippable",
+      "type": "mid-roll",
+      "skippable": false,
+      "patterns": [
+        "adpodposition=[1-9].*(nonskip|bumper)",
+        "midroll.*(bumper|nonskip)",
+        "ctier=L.*mid"
+      ],
+      "heuristics": {}
+    },
+    {
+      "name": "mid_roll_skippable",
+      "type": "mid-roll",
+      "skippable": true,
+      "patterns": [
+        "adpodposition=[1-9]",
+        "midroll",
+        "get_midroll_",
+        "ad_break_type=1.*midroll"
+      ],
+      "heuristics": {}
+    },
+    {
+      "name": "post_roll_nonskippable",
+      "type": "post-roll",
+      "skippable": false,
+      "patterns": [
+        "postroll.*nonskip",
+        "ad_break_type=4"
+      ],
+      "heuristics": {}
+    },
+    {
+      "name": "post_roll_skippable",
+      "type": "post-roll",
+      "skippable": true,
+      "patterns": [
+        "postroll",
+        "ad_break_type=3",
+        "post_playback.*ad"
+      ],
+      "heuristics": {}
+    },
+    {
+      "name": "overlay_banner",
+      "type": "overlay",
+      "skippable": true,
+      "patterns": [
+        "ad_format=overlay",
+        "ad_format=banner",
+        "adunit/banner",
+        "pagead/interaction"
+      ],
+      "heuristics": {}
+    },
+    {
+      "name": "companion_ad",
+      "type": "companion",
+      "skippable": true,
+      "patterns": [
+        "ad_format=companion",
+        "companion_ad",
+        "adunit/companion"
+      ],
+      "heuristics": {}
+    }
+  ],
+  "url_parameters": {
+    "ad_indicators": [
+      "oad",
+      "ad_type",
+      "adformat",
+      "ad_format",
+      "ctier",
+      "ad_break_type",
+      "adpodposition",
+      "adtagurl",
+      "adgoogleid",
+      "ads_tag",
+      "adbreaktype",
+      "atype",
+      "annotation_id"
+    ],
+    "video_indicators": [
+      "id",
+      "itag",
+      "source",
+      "requiressl",
+      "mime"
+    ]
+  },
+  "domains": {
+    "ad_servers": [
+      "doubleclick.net",
+      "googlesyndication.com",
+      "googleadservices.com",
+      "google-analytics.com",
+      "googletagmanager.com",
+      "googletagservices.com",
+      "ads.youtube.com",
+      "adservice.google.com",
+      "pagead2.googlesyndication.com",
+      "innovid.com",
+      "ad.doubleclick.net",
+      "2mdn.net",
+      "googleads.g.doubleclick.net",
+      "adsafeprotected.com",
+      "serving-sys.com",
+      "admob.com"
+    ],
+    "googlevideo_ad_patterns": [
+      "r[0-9]+---sn-[a-z0-9]+\\.googlevideo\\.com",
+      "r[0-9]+\\.sn-[a-z0-9-]+\\.googlevideo\\.com",
+      "r[0-9]+---sn-[a-z0-9]{8}\\.googlevideo\\.com",
+      "r[0-9]+\\.sn-[a-z0-9]+-[a-z0-9]{4}\\.googlevideo\\.com",
+      "redirector\\.googlevideo\\.com"
+    ]
+  },
+  "path_patterns": {
+    "ad_paths": [
+      "/pagead/",
+      "/ptracking",
+      "/_get_ads",
+      "/api/stats/ads",
+      "/api/stats/ads_break",
+      "/get_midroll_",
+      "/pagead/adview",
+      "/pagead/interaction",
+      "/pagead/conversion",
+      "/pagead/viewthroughconversion",
+      "/api/stats/atr",
+      "/youtubei/v1/player/ad",
+      "/sodar/",
+      "/generate_204",
+      "/pcs/activeview",
+      "/ads_data_monitor",
+      "/pagead/adunit/",
+      "/live_stats.*adformat",
+      "/api/stats/delayplay",
+      "/watch_fragments_ajax.*adunit",
+      "/api/stats/qoe.*adformat",
+      "/api/stats/playback/post_playback"
+    ],
+    "videoplayback_ad_indicators": [
+      "/videoplayback.*oad",
+      "/videoplayback.*ctier=L",
+      "/videoplayback.*ad_break",
+      "/videoplayback.*adpodposition",
+      "/videoplayback.*ad_type",
+      "/videoplayback.*ads_tag",
+      "/videoplayback.*adbreaktype",
+      "/videoplayback.*adtagurl",
+      "/videoplayback/.*ads",
+      "/videogoodput.*adunit"
+    ]
+  }
+}

@@ -13,6 +13,7 @@ import subprocess
 import ipaddress
 import traceback
 import signal
+import json
 
 # Konfiguracja logowania
 logging.basicConfig(
@@ -50,8 +51,45 @@ AD_DOMAINS = [
     r'.*\.2mdn\.net',
     r'.*\.adsafeprotected\.com',
     r'.*\.serving-sys\.com',
-    r'.*\.admob\..*'
+    r'.*\.admob\..*',
+    # Nowe domeny z 2024/2025
+    r'.*\.innovid\.com',
+    r'.*adservice\.google\..*',
+    r'.*pagead2\.googlesyndication\.com',
+    r'r[0-9]+\.sn-[a-z0-9-]+\.googlevideo\.com',
+    r'r[0-9]+---sn-[a-z0-9]{8}\.googlevideo\.com',
+    r'r[0-9]+\.sn-[a-z0-9]+-[a-z0-9]{4}\.googlevideo\.com',
+    r'redirector\.googlevideo\.com'
 ]
+
+def load_ad_domains_from_signatures():
+    """Wczytaj domeny reklamowe z pliku ad_signatures.json"""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        signatures_path = os.path.join(script_dir, 'ad_signatures.json')
+        
+        if os.path.exists(signatures_path):
+            with open(signatures_path, 'r', encoding='utf-8') as f:
+                signatures = json.load(f)
+                
+            # Dodaj domeny z pliku sygnatur
+            additional_domains = []
+            if 'domains' in signatures:
+                for server in signatures['domains'].get('ad_servers', []):
+                    additional_domains.append(f".*{re.escape(server)}")
+                
+                for pattern in signatures['domains'].get('googlevideo_ad_patterns', []):
+                    additional_domains.append(pattern)
+            
+            logger.info(f"Załadowano {len(additional_domains)} dodatkowych domen z ad_signatures.json")
+            return additional_domains
+    except Exception as e:
+        logger.warning(f"Nie udało się załadować domen z ad_signatures.json: {e}")
+    
+    return []
+
+# Dodaj domeny z pliku sygnatur
+AD_DOMAINS.extend(load_ad_domains_from_signatures())
 
 # Kompilacja wyrażeń regularnych dla szybszego dopasowania
 AD_PATTERNS = [re.compile(pattern) for pattern in AD_DOMAINS]
